@@ -40,4 +40,6 @@ if [ -n "$(git diff --shortstat 2> /dev/null | tail -n1)" ]; then
 fi
 
 dep ensure -v -vendor-only
+export GOARCH
+export GOARM
 go build -ldflags="-X ${REPO_PATH}/version.Version=${VERSION}" -o build/finder ./cmd/...
