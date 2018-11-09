@@ -6,8 +6,11 @@ def build(c):
 
 @task
 def deploy(c):
-	build(c)
 	c.run("mkdir -p app")
-	c.run("pkill finder", warn=True)
+	stop(c)
 	c.put("build/finder", "./app/finder")
-	c.run("./app/finder")
+	c.sudo("./app/finder")
+
+@task
+def stop(c):
+	c.sudo("pkill -15 finder", warn=True)
