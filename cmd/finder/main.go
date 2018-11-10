@@ -117,6 +117,7 @@ func main() {
 	}()
 
 	webHandler := func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		data := map[string]interface{}{
 			"data":  devSig,
 			"error": devErr,
