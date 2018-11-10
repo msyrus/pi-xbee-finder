@@ -25,6 +25,14 @@
 #   unused-packages = true
 
 
+[[constraint]]
+  branch = "master"
+  name = "github.com/msyrus/go"
+
+[[constraint]]
+  branch = "master"
+  name = "go.bug.st/serial.v1"
+
 [prune]
   go-tests = true
   unused-packages = true
