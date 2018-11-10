@@ -13,7 +13,7 @@ if ! [ -x "$(command -v go)" ]; then
 fi
 if ! [ -x "$(command -v git)" ]; then
     echo "git is not installed"
-    exit
+    exit 1
 fi
 if [ -z "${GOPATH}" ]; then
     echo "set GOPATH"
