@@ -45,7 +45,7 @@ type Frame struct {
 }
 
 func ParseFrame(data []byte) (*Frame, error) {
-	if data[0] != 0x7e || len(data) < 4 {
+	if len(data) < 4 || data[0] != 0x7e {
 		return nil, ErrInvalidData
 	}
 
@@ -76,6 +76,7 @@ func ParseFrame(data []byte) (*Frame, error) {
 	}
 
 	dmask := binary.BigEndian.Uint16(data[16:18])
+	ddata := binary.BigEndian.Uint16(data[19:21])
 	amask := data[18]
 
 	f.DataD = map[int]bool{}
@@ -83,9 +84,10 @@ func ParseFrame(data []byte) (*Frame, error) {
 
 	for i := 0; dmask != 0; i++ {
 		if dmask&1 == 1 {
-			f.DataD[i] = true
+			f.DataD[i] = (ddata & 1) == 1
 		}
 		dmask = dmask >> 1
+		ddata = ddata >> 1
 	}
 
 	for i := 0; amask != 0; i++ {
