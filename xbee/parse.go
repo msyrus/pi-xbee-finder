@@ -1,8 +1,10 @@
 package xbee
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"io"
 )
 
 type FrameType int
@@ -16,8 +18,11 @@ type PacketType int
 
 const (
 	UnknownPacketType PacketType = iota
+	UnicastPacketType
 	BroadcastPacketType
 )
+
+// 7E 0012 92 0013A20040A9C7E5 B271 01 01 0002 00 0000 FC
 
 // 7E 0012 92 0013A20040A9C7D4 BC24 02 01 0002 00 0002 4D
 //
@@ -44,7 +49,61 @@ type Frame struct {
 	DataA      map[int]int
 }
 
+func ParseFrom(r io.Reader, dataCh chan<- *Frame, errCh chan<- error) error {
+	buf := &bytes.Buffer{}
+	for {
+		byts := make([]byte, 1000)
+		n, err := r.Read(byts)
+		if err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
+		buf.Write(byts[:n])
+		if buf.Len() < 20 {
+			continue
+		}
+
+		tmpBuf := &bytes.Buffer{}
+		for {
+			b, err := buf.ReadByte()
+			if err != nil {
+				break
+			}
+			if b != 0x7e {
+				continue
+			}
+			tmpBuf.WriteByte(b)
+
+			if buf.Len() < 2 {
+				break
+			}
+
+			byts := buf.Next(2)
+			tmpBuf.Write(byts)
+
+			l := int(binary.BigEndian.Uint16(byts))
+			if buf.Len() < (l + 1) {
+				break
+			}
+
+			tmpBuf.Write(buf.Next(l + 1))
+
+			f, err := ParseFrame(tmpBuf.Next(tmpBuf.Len()))
+			if err != nil {
+				errCh <- err
+				continue
+			}
+			dataCh <- f
+		}
+		buf.WriteTo(tmpBuf)
+		tmpBuf.WriteTo(buf)
+	}
+}
+
 func ParseFrame(data []byte) (*Frame, error) {
+	// fmt.Println(hex.EncodeToString(data))
 	if len(data) < 4 || data[0] != 0x7e {
 		return nil, ErrInvalidData
 	}
@@ -71,6 +130,8 @@ func ParseFrame(data []byte) (*Frame, error) {
 	}
 
 	switch data[14] {
+	case 0x01:
+		f.PacketType = UnicastPacketType
 	case 0x02:
 		f.PacketType = BroadcastPacketType
 	}

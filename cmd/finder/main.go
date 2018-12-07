@@ -10,10 +10,11 @@ import (
 	"strconv"
 	"time"
 
+	serial "go.bug.st/serial.v1"
+
 	mhttp "github.com/msyrus/go/http"
 	"github.com/msyrus/pi-xbee-finder/version"
 	"github.com/msyrus/pi-xbee-finder/xbee"
-	serial "go.bug.st/serial.v1"
 )
 
 const usage = `
@@ -99,20 +100,8 @@ func main() {
 	}()
 
 	go func() {
-		for {
-			buff := make([]byte, 1000)
-			n, err := port.Read(buff)
-			if err != nil {
-				log.Fatal(err)
-			}
-			// fmt.Println("Read", n, "bytes")
-			// fmt.Println("Received:", hex.EncodeToString(buff[:n]))
-			f, err := xbee.ParseFrame(buff[:n])
-			if err != nil {
-				errCh <- err
-			} else {
-				dataCh <- f
-			}
+		if err := xbee.ParseFrom(port, dataCh, errCh); err != nil {
+			log.Fatal(err)
 		}
 	}()
 
